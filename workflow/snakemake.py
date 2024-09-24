@@ -1,15 +1,16 @@
 import glob
 
-SAMPLE,RF=glob_wildcards("../resources/Data/{sample}_{rf}.fastq")
+SAMPLE,RF=glob_wildcards("../resources/Data/{sample}_{rf}.fastq.gz")
 
 rule all:
     input: 
         expand("../resources/Outputs/fastqc_rr/{sample}_{rf}.html", sample=SAMPLE, rf=RF), 
-        expand("../resources/Outputs/fastqc_rr/{sample}_{rf}_fastqc.zip", sample=SAMPLE, rf=RF)
+        expand("../resources/Outputs/fastqc_rr/{sample}_{rf}_fastqc.zip", sample=SAMPLE, rf=RF),
+        expand("../resources/Outputs/trimmed_reads/{sample}_R{pe}.fastq.gz", sample=SAMPLE, pe=["1","2"])
 
 rule fastqc_rr:
     input: 
-        reads="../resources/Data/{sample}_{rf}.fastq"
+        reads="../resources/Data/{sample}_{rf}.fastq.gz"
     output: 
         html="../resources/Outputs/fastqc_rr/{sample}_{rf}.html",
         zip="../resources/Outputs/fastqc_rr/{sample}_{rf}_fastqc.zip"
@@ -26,4 +27,31 @@ rule fastqc_rr:
     wrapper:
         "v4.5.0/bio/fastqc"
 
+rule trimmomatic_rr:
+    input:
+        r1="../resources/Data/{sample}_R1.fastq.gz",
+        r2="../resources/Data/{sample}_R2.fastq.gz"
+    output:
+        r1="../resources/Outputs/trimmed_reads/{sample}_R1.fastq.gz", 
+        r2="../resources/Outputs/trimmed_reads/{sample}_R2.fastq.gz", 
+        r1_unpaired="../resources/Outputs/trimmomatic/{sample}_R1.unpaired.fastq.gz", 
+        r2_unpaired="../resources/Outputs/trimmomatic/{sample}_R2.unpaired.fastq.gz"
+    log:
+        "../resources/Logs/trimmomatic/{sample}.log"
+    conda:
+        "../envs/trimmomatic_env.yaml"
+    params:
+        trimmer=["TRAILING:3", 
+                 "LEADING:3",
+                 "SLIDINGWINDOW:3:20",
+                 "ILLUMINACLIP:../resources/adapters/TruSeq3-PE.fa:2:30:10:2:keepBothReads",
+                 "MINLEN:50"], #Need to add more arguments
+        compression_level="-5"
+    threads: 
+        4
+    resources:
+        mem_mb=3024
+    wrapper:
+        "v4.5.0/bio/trimmomatic/pe"
 
+            
