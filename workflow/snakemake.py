@@ -6,7 +6,8 @@ rule all:
     input: 
         expand("../resources/Outputs/fastqc_rr/{sample}_{rf}.html", sample=SAMPLE, rf=RF), 
         expand("../resources/Outputs/fastqc_rr/{sample}_{rf}_fastqc.zip", sample=SAMPLE, rf=RF),
-        expand("../resources/Outputs/trimmed_reads/{sample}_R{pe}.fastq.gz", sample=SAMPLE, pe=["1","2"])
+        expand("../resources/Outputs/trimmed_reads/{sample}_R{pe}.fastq.gz", sample=SAMPLE, pe=["1","2"]), 
+        expand("../results/fastqc_tr/{sample}_{rf}.html", sample=SAMPLE, rf=RF)
 
 rule fastqc_rr:
     input: 
@@ -43,7 +44,7 @@ rule trimmomatic_rr:
     params:
         trimmer=["TRAILING:3", 
                  "LEADING:3",
-                 "SLIDINGWINDOW:3:20",
+                 "SLIDINGWINDOW:4:20",
                  "ILLUMINACLIP:../resources/adapters/TruSeq3-PE.fa:2:30:10:2:keepBothReads",
                  "MINLEN:50"], #Need to add more arguments
         compression_level="-5"
@@ -54,4 +55,24 @@ rule trimmomatic_rr:
     wrapper:
         "v4.5.0/bio/trimmomatic/pe"
 
-            
+rule fastqc_tr:
+    input:
+        reads="../resources/Outputs/trimmed_reads/{sample}_{rf}.fastq.gz"
+    output: 
+        html="../results/fastqc_tr/{sample}_{rf}.html",
+        zip="../results/fastqc_tr/{sample}_{rf}_fastqc.zip"
+    params:
+        extra="--quiet"
+    threads:
+        4
+    resources:
+        mem_mb=4000
+    log:
+        "../resources/Logs/fastqc_tr/{sample}_{rf}.log"
+    conda:
+        "../envs/fastqc_env.yaml"
+    wrapper:
+        "v4.5.0/bio/fastqc"
+
+
+
