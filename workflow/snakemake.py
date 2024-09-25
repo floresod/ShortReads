@@ -42,9 +42,9 @@ rule trimmomatic_rr:
     conda:
         "../envs/trimmomatic_env.yaml"
     params:
-        trimmer=["TRAILING:3", 
-                 "LEADING:3",
-                 "SLIDINGWINDOW:4:20",
+        trimmer=["TRAILING:15", 
+                 "LEADING:15",
+                 #"SLIDINGWINDOW:4:20",
                  "ILLUMINACLIP:../resources/adapters/TruSeq3-PE.fa:2:30:10:2:keepBothReads",
                  "MINLEN:50"], #Need to add more arguments
         compression_level="-5"
