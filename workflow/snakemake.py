@@ -7,8 +7,9 @@ rule all:
         expand("../resources/Outputs/fastqc_rr/{sample}_{rf}.html", sample=SAMPLE, rf=RF), 
         expand("../resources/Outputs/fastqc_rr/{sample}_{rf}_fastqc.zip", sample=SAMPLE, rf=RF),
         expand("../resources/Outputs/trimmed_reads/{sample}_R{pe}.fastq.gz", sample=SAMPLE, pe=["1","2"]), 
-        expand("../results/fastqc_tr/{sample}_{rf}.html", sample=SAMPLE, rf=RF)
-
+        expand("../results/fastqc_tr/{sample}_{rf}.html", sample=SAMPLE, rf=RF),
+        expand("../resources/Outputs/kraken2_rr/reports/{sample}.txt", sample=SAMPLE),
+        expand("../results/bracken/{sample}.txt", sample=SAMPLE)
 rule fastqc_rr:
     input: 
         reads="../resources/Data/{sample}_{rf}.fastq.gz"
@@ -74,5 +75,48 @@ rule fastqc_tr:
     wrapper:
         "v4.5.0/bio/fastqc"
 
-
-
+rule kraken2_rr:
+    input:
+        r1 = "../resources/Outputs/trimmed_reads/{sample}_R1.fastq.gz", 
+        r2 = "../resources/Outputs/trimmed_reads/{sample}_R2.fastq.gz"
+    output:
+        output = "../resources/Outputs/kraken2_rr/outputs/{sample}.txt", 
+        report = "../resources/Outputs/kraken2_rr/reports/{sample}.txt"
+    params:
+        k2db = "../../../Databases/k2_standard_08gb_20240605/",
+        conf = 0.05
+    log:
+        "../resources/Logs/kraken2_rr/{sample}.log"
+    threads:
+        4
+    conda: 
+        "../envs/kraken2_env.yaml"
+    shell:
+        """
+        kraken2 --db {params.k2db} \
+                --output {output.output} \
+                --report {output.report} \
+                --paired {input.r1} {input.r2} \
+                --threads {threads} \
+                --confidence {params.conf}
+        """
+    
+rule bracken_rr:
+    input:
+        k2_report = "../resources/Outputs/kraken2_rr/reports/{sample}.txt"
+    output:
+        bra_report = "../results/bracken/{sample}.txt"
+    params:
+        k2db = "../../../Databases/k2_standard_08gb_20240605/",
+        reads_len = 100
+    log:
+        "../resources/Logs/bracken/{sample}.log"
+    conda:
+        "../envs/bracken_env.yaml"
+    shell:
+        """
+        bracken -d {params.k2db} \
+                -i {input.k2_report} \
+                -o {output.bra_report} \
+                -r {params.reads_len}
+        """
