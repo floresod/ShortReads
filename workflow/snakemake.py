@@ -9,7 +9,8 @@ rule all:
         expand("../resources/Outputs/trimmed_reads/{sample}_R{pe}.fastq.gz", sample=SAMPLE, pe=["1","2"]), 
         expand("../results/fastqc_tr/{sample}_{rf}.html", sample=SAMPLE, rf=RF),
         expand("../resources/Outputs/kraken2_rr/reports/{sample}.txt", sample=SAMPLE),
-        expand("../results/bracken/{sample}.txt", sample=SAMPLE)
+        expand("../results/bracken/{sample}.txt", sample=SAMPLE),
+        expand( "../resources/Outputs/mergepe/{sample}.fastq.gz", sample=SAMPLE)
 rule fastqc_rr:
     input: 
         reads="../resources/Data/{sample}_{rf}.fastq.gz"
@@ -120,3 +121,20 @@ rule bracken_rr:
                 -o {output.bra_report} \
                 -r {params.reads_len}
         """
+
+rule seqtk_mergepe:
+    input:
+        r1 = rules.trimmomatic_rr.output.r1,
+        r2 = rules.trimmomatic_rr.output.r2
+    output:
+        merged = "../resources/Outputs/mergepe/{sample}.fastq.gz"
+    log:
+        "../resources/Logs/mergepe/{sample}.log"
+    params:
+        command="mergepe",
+        compress_lvl=9
+    threads: 
+        4
+    wrapper:
+        "v4.6.0/bio/seqtk"
+
