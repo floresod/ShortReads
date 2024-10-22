@@ -1,7 +1,24 @@
+################################
+##### SHORT READS ANALYSES #####
+################################
+
+
+
+#################################
+#### Import Python libraries ####
+#################################
 import glob
 
+
+#################################
+#### Define Global Variables ####
+#################################
 SAMPLE,RF=glob_wildcards("../resources/Data/{sample}_{rf}.fastq.gz")
 
+
+#########################
+#### General Outputs ####
+#########################
 rule all:
     input: 
         expand("../resources/Outputs/fastqc_rr/{sample}_{rf}.html", sample=SAMPLE, rf=RF), 
@@ -11,7 +28,11 @@ rule all:
         expand("../resources/Outputs/kraken2_rr/reports/{sample}.txt", sample=SAMPLE),
         expand("../results/bracken/{sample}.txt", sample=SAMPLE),
         expand( "../resources/Outputs/mergepe/{sample}.fastq.gz", sample=SAMPLE)
-rule fastqc_rr:
+
+#################################
+#### Quality Check raw reads ####
+#################################
+    rule fastqc_rr:
     input: 
         reads="../resources/Data/{sample}_{rf}.fastq.gz"
     output: 
@@ -30,6 +51,10 @@ rule fastqc_rr:
     wrapper:
         "v4.5.0/bio/fastqc"
 
+
+###################################
+#### Quality Control raw reads ####
+###################################
 rule trimmomatic_rr:
     input:
         r1="../resources/Data/{sample}_R1.fastq.gz",
@@ -57,6 +82,9 @@ rule trimmomatic_rr:
     wrapper:
         "v4.5.0/bio/trimmomatic/pe"
 
+#####################################
+#### Quality check trimmed reads ####
+#####################################
 rule fastqc_tr:
     input:
         reads="../resources/Outputs/trimmed_reads/{sample}_{rf}.fastq.gz"
@@ -76,6 +104,9 @@ rule fastqc_tr:
     wrapper:
         "v4.5.0/bio/fastqc"
 
+##################################
+#### Taxonomic Classification ####
+##################################
 rule kraken2_rr:
     input:
         r1 = "../resources/Outputs/trimmed_reads/{sample}_R1.fastq.gz", 
@@ -84,7 +115,7 @@ rule kraken2_rr:
         output = "../resources/Outputs/kraken2_rr/outputs/{sample}.txt", 
         report = "../resources/Outputs/kraken2_rr/reports/{sample}.txt"
     params:
-        k2db = "../../../Databases/k2_standard_08gb_20240605/",
+        k2db = "../../../Databases/k2_standard_08gb_20240605/",   #### Ensure this directs to kraken database ####
         conf = 0.05
     log:
         "../resources/Logs/kraken2_rr/{sample}.log"
@@ -122,6 +153,9 @@ rule bracken_rr:
                 -r {params.reads_len}
         """
 
+#####################
+#### Merge Reads ####
+#####################
 rule seqtk_mergepe:
     input:
         r1 = rules.trimmomatic_rr.output.r1,
