@@ -32,8 +32,8 @@ rule all:
 #################################
 #### Quality Check raw reads ####
 #################################
-    rule fastqc_rr:
-    input: 
+rule fastqc_rr:
+    input:
         reads="../resources/Data/{sample}_{rf}.fastq.gz"
     output: 
         html="../resources/Outputs/fastqc_rr/{sample}_{rf}.html",
